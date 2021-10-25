@@ -78,7 +78,7 @@ macro serialize(type_name)
                     concrete_type = typeof(getfield(obj,f))
                     # @show concrete_type
                     # @show !isprimitivetype(concrete_type) && concrete_type != String 
-                    if !isprimitivetype(concrete_type) && concrete_type != String 
+                    if !isprimitivetype(concrete_type) && !isnothing(getfield(obj,f)) && concrete_type != String 
                         fvalue = abstract_bson(getfield(obj,f))
                     end
                 
