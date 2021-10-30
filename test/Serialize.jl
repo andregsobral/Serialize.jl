@@ -218,7 +218,8 @@ end
         gvu = GenVecU([at,ot,ot])
         gd  = GenDict(Dict("1" => at, "2" => ot))
         gdu = GenDictU(Dict("1" => at, "2" => c))
-        hg = HelloGen(gv.attr, gvu.attr, ["testing"], AType("12"), OtherType(12), AType("12"), Dict("one" => at), Dict("one" => at), Dict("one" => at), Dict("wut" => 123), "test", 100)
+        hg = HelloGen(gv.attr, gvu.attr, ["testing"], AType("12"), OtherType(12), AType("12"), Dict("one" => at), Dict("one" => at), Dict("one" => at), Dict("wut" => 123), Dict{Any, Any}("String" => 12312, "dasdas" => AType("12")), "test", 100)
+        dwr = DictWrapper(Dict{Any, Any}("String" => 12312, "dasdas" => AType("12")))
 
         @test AType(Mongoc.BSON(at)).attr      == at.attr
         @test OtherType(Mongoc.BSON(ot)).attr  == ot.attr
@@ -228,7 +229,9 @@ end
         @test GenDict(Mongoc.BSON(gd)).attr    == gd.attr
         @test GenDictU(Mongoc.BSON(gdu)).attr["1"]       == gdu.attr["1"]
         @test GenDictU(Mongoc.BSON(gdu)).attr["2"].attr  == gdu.attr["2"].attr
+        @test DictWrapper(Mongoc.BSON(dwr)).attr  == dwr.attr
         
+
         res = HelloGen(Mongoc.BSON(hg))
         for f in fieldnames(HelloGen)
             @test getfield(res, f) == getfield(hg, f)

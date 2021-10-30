@@ -86,7 +86,7 @@ struct HelloGen
     h ::Dict{String, Union{AType, OtherType}}
     i ::Dict{String, GenericType}
     j ::Dict{String, Int}
-    # l ::Dict
+    l ::Dict
     label::String
     age::Int
 end

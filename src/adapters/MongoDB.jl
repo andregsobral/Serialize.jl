@@ -16,8 +16,8 @@ macro serialize(type_name)
                 fvalue = nothing
                 ftype  = fieldtype($(esc(type_name)),f)
                 # ---- Abstract or Union type
-                if isabstracttype(ftype) || ftype isa Union
-                    fvalue = bson(TemplateType, obj, f)
+                if isgenerictype(ftype)
+                    fvalue = bson(GenericType, obj, f)
                 # ---- Array types
                 elseif ftype <: Array
                     fvalue = bson(Array, obj, f)
@@ -37,41 +37,24 @@ macro serialize(type_name)
         end
 
         # -------------- Deserialize (BSON -> type)
-        # --- deserialize type (dict -> type)
-        # --- ex: Client(data::Dict)
+        # --- deserialize type (BSON -> type)
+        # --- ex: Client(data::Mongoc.BSON)
         function $(esc(type_name))(data::Mongoc.BSON)
             arr = []
-    
             # -- Ensures correct order of fieldnames so that the constructor is called correctly
             for f in fieldnames($(esc(type_name)))
                 fvalue = data[string(f)] # default value
                 ftype  = fieldtype($(esc(type_name)), f)
-
+                
                 # ---- Abstract or Union type
-                if isabstracttype(ftype) || ftype isa Union && typeof(fvalue) <: Dict  # must have "_type"
-                    fvalue = convert(gettype(@__MODULE__, fvalue["_type"]), data[string(f)])
-                    
+                if isgenerictype(ftype) && typeof(fvalue) <: Dict # -- filters out cases of Union{String, SomeType}
+                    fvalue = toType(GenericType, @__MODULE__, fvalue["_type"], fvalue)
+                # ---- Array types
                 elseif ftype <: Array
-                    parameter_type = eltype(ftype)
-                    if isabstracttype(parameter_type) || parameter_type isa Union
-                        fvalue = map(v -> haskey(v, "_type") ? convert(gettype(@__MODULE__, v["_type"]), v) : v, fvalue)
-                    end
-
+                    fvalue = toType(Array, @__MODULE__, ftype, fvalue)
+                # ---- Dict types
                 elseif ftype <: Dict 
-                    if !isempty(eltype(fieldtype($(esc(type_name)), f)).types) # -- isempty on {Any, Any}
-                        first_parameter = eltype(fieldtype($(esc(type_name)), f)).types[1] # -- From {String, T} get type 'String'
-                        parameter_type  = eltype(fieldtype($(esc(type_name)), f)).types[2] # -- From {String, T} get type 'T'
-
-                        if !isprimitivetype(parameter_type) || !(parameter_type <: String)
-                            if isabstracttype(parameter_type) || parameter_type isa Union
-                                fvalue = Dict{first_parameter, parameter_type}([k => convert(gettype(@__MODULE__, v["_type"]), v) for (k,v) in fvalue])
-                            else
-                                fvalue = Dict{first_parameter, parameter_type}([k => convert(parameter_type, v) for (k,v) in fvalue])
-                            end
-                        end
-                    else # -- Dict{Any, Any}
-                        fvalue = Dict([k => (v isa Dict && haskey(v, "_type")) ? convert(gettype(@__MODULE__, v["_type"]), v) : v for (k,v) in data[string(f)]])
-                    end
+                    fvalue = toType(Dict, @__MODULE__, ftype, fvalue)
                 end
                 push!(arr, fvalue)
             end
