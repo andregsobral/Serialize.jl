@@ -14,6 +14,7 @@ using Serialize
 @serialize GenDict
 @serialize GenDictU
 @serialize DictWrapper
+@serialize HelloGen
 # TODO:
 # @serialize VecWrapper
 # @serialize All
@@ -206,6 +207,32 @@ end
         end
         @test p.height == bson_person["height"]
         @test p.items  == bson_person["items"]
+    end
+
+    @testset "Most cases of deserialization" begin
+        at = AType("hello")
+        ot = OtherType(1)
+        ft = FourthType(ot)
+        c  = Company(Dict("testing" => ot))
+        gv = GenVec([at,at,ot])
+        gvu = GenVecU([at,ot,ot])
+        gd  = GenDict(Dict("1" => at, "2" => ot))
+        gdu = GenDictU(Dict("1" => at, "2" => c))
+        hg = HelloGen(gv.attr, gvu.attr, ["testing"], AType("12"), OtherType(12), AType("12"), Dict("one" => at), Dict("one" => at), Dict("one" => at), Dict("wut" => 123), "test", 100)
+
+        @test AType(Mongoc.BSON(at)).attr      == at.attr
+        @test OtherType(Mongoc.BSON(ot)).attr  == ot.attr
+        @test FourthType(Mongoc.BSON(ft)).attr == ft.attr
+        @test Company(Mongoc.BSON(c)).attr     == c.attr
+        @test GenVec(Mongoc.BSON(gv)).attr     == gv.attr
+        @test GenDict(Mongoc.BSON(gd)).attr    == gd.attr
+        @test GenDictU(Mongoc.BSON(gdu)).attr["1"]       == gdu.attr["1"]
+        @test GenDictU(Mongoc.BSON(gdu)).attr["2"].attr  == gdu.attr["2"].attr
+        
+        res = HelloGen(Mongoc.BSON(hg))
+        for f in fieldnames(HelloGen)
+            @test getfield(res, f) == getfield(hg, f)
+        end
     end
 
 end

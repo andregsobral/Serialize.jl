@@ -75,19 +75,19 @@ end
 # end
 
 
-# struct HelloGen
-#     a ::Vector{GenericType}
-#     b ::Vector{Union{AType, OtherType}}
-#     c ::Vector{String}
-#     d ::AType
-#     e ::GenericType
-#     f ::Union{AType, OtherType}
-#     g ::Dict{String, AType}
-#     h ::Dict{String, Union{AType, OtherType}}
-#     i ::Dict{String, GenericType}
-#     j ::Dict{String, Int}
-#     l ::Dict
-#     label::String
-#     age::Int
-# end
+struct HelloGen
+    a ::Vector{GenericType}
+    b ::Vector{Union{AType, OtherType}}
+    c ::Vector{String}
+    d ::AType
+    e ::GenericType
+    f ::Union{AType, OtherType}
+    g ::Dict{String, AType}
+    h ::Dict{String, Union{AType, OtherType}}
+    i ::Dict{String, GenericType}
+    j ::Dict{String, Int}
+    # l ::Dict
+    label::String
+    age::Int
+end
 
