@@ -78,3 +78,35 @@ function toType(::Type{Dict}, m::Module, ftype, obj)
     # -- Dict{Any, Any}
     return Dict([k => (v isa Dict && haskey(v, "_type")) ? toType(GenericType, m, v["_type"], v) : v for (k,v) in obj])
 end
+
+# ---- bson & toType driver functions
+
+function bson(ftype, obj, f)
+    fvalue = nothing
+    # ---- Abstract or Union type
+    if isgenerictype(ftype)
+        fvalue = bson(GenericType, obj, f)
+    # ---- Array types
+    elseif ftype <: Array
+        fvalue = bson(Array, obj, f)
+    # ---- Dict types
+    elseif ftype <: Dict
+        fvalue = bson(Dict, obj, f)
+    end
+    return isnothing(fvalue) ? getfield(obj,f) #= default value =# : fvalue #= default value =#
+end
+
+function toType(m::Module, ftype, data, f)
+    fvalue = data[string(f)] # default value
+    # ---- Abstract or Union type
+    if isgenerictype(ftype) && typeof(fvalue) <: Dict # -- filters out cases of Union{String, SomeType}
+        return toType(GenericType, m, fvalue["_type"], fvalue)
+    # ---- Array types
+    elseif ftype <: Array
+        return toType(Array, m, ftype, fvalue)
+    # ---- Dict types
+    elseif ftype <: Dict 
+        return toType(Dict, m, ftype, fvalue)
+    end
+    return fvalue
+end

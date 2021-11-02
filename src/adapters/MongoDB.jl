@@ -1,7 +1,7 @@
 import Base: convert, setindex!, convert, push!
-import Mongoc.BSON
+import Mongoc: BSON
 
-include("MongoUtils.jl")
+include("utils.jl")
 
 macro serialize(type_name)
     
@@ -11,21 +11,9 @@ macro serialize(type_name)
         # --- ex: Mongoc.BSON(obj::Client)
         function Mongoc.BSON(obj::$(esc(type_name)))
             res = Mongoc.BSON()
-            
             for f in fieldnames($(esc(type_name)))
-                fvalue = nothing
                 ftype  = fieldtype($(esc(type_name)),f)
-                # ---- Abstract or Union type
-                if isgenerictype(ftype)
-                    fvalue = bson(GenericType, obj, f)
-                # ---- Array types
-                elseif ftype <: Array
-                    fvalue = bson(Array, obj, f)
-                # ---- Dict types
-                elseif ftype <: Dict
-                    fvalue = bson(Dict, obj, f)
-                end
-                res[string(f)] = isnothing(fvalue) ? getfield(obj,f) #= default value =# : fvalue
+                res[string(f)] = bson(ftype, obj, f)
             end
             return res
         end
@@ -43,20 +31,8 @@ macro serialize(type_name)
             arr = []
             # -- Ensures correct order of fieldnames so that the constructor is called correctly
             for f in fieldnames($(esc(type_name)))
-                fvalue = data[string(f)] # default value
                 ftype  = fieldtype($(esc(type_name)), f)
-                
-                # ---- Abstract or Union type
-                if isgenerictype(ftype) && typeof(fvalue) <: Dict # -- filters out cases of Union{String, SomeType}
-                    fvalue = toType(GenericType, @__MODULE__, fvalue["_type"], fvalue)
-                # ---- Array types
-                elseif ftype <: Array
-                    fvalue = toType(Array, @__MODULE__, ftype, fvalue)
-                # ---- Dict types
-                elseif ftype <: Dict 
-                    fvalue = toType(Dict, @__MODULE__, ftype, fvalue)
-                end
-                push!(arr, fvalue)
+                push!(arr, toType(@__MODULE__, ftype, data, f))
             end
             return $(esc(type_name))(arr...)
         end

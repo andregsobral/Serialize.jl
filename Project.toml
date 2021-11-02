@@ -1,12 +1,11 @@
 name = "Serialize"
 uuid = "cff826d6-85b7-4e59-b833-cfb3a9480406"
 authors = ["AndreSobrall <andre.g.sobral@gmail.com>"]
-version = "0.2.0"
+version = "0.2.1"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Faker = "0efc519c-db33-5916-ab87-703215c3906f"
-JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 Mongoc = "4fe8b98c-fc19-5c23-8ec2-168ff83495f2"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
