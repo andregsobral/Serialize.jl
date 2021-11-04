@@ -15,12 +15,35 @@ using Serialize
 @serialize GenDictU
 @serialize DictWrapper
 @serialize HelloGen
-# TODO:
-# @serialize VecWrapper
+@serialize VecWrapper
 # @serialize All
 
 
 @testset "Serialization tests       " begin
+
+    @testset "Serialize VecWrapper" begin
+        vw = VecWrapper([1,2,"3", AType("Hello")])
+        vw_bson = Mongoc.BSON(vw)
+        # @show VecWrapper(Mongoc.BSON(vw))
+
+        @test vw_bson["attr"][1] == vw.attr[1]
+        @test vw_bson["attr"][2] == vw.attr[2]
+        @test vw_bson["attr"][3] == vw.attr[3]
+        @test vw_bson["attr"][4]["attr"]  == vw.attr[4].attr
+        @test haskey(vw_bson["attr"][4], "_type") == true
+        @test vw_bson["attr"][4]["_type"] == string(typeof(vw.attr[4]))
+
+        vw = VecWrapper([[1,2,"3"],[4,5,6]])
+        vw_bson = Mongoc.BSON(vw)
+        for i in 1:length(vw_bson["attr"])
+            @test vw_bson["attr"][i] == vw.attr[i]
+        end
+        
+        # --- ToDo: Recursive calls
+        # vw = VecWrapper([[1,2,"3"], [AType("Hello"),"3"]])
+        # @show Mongoc.BSON(vw)
+        # @show VecWrapper(Mongoc.BSON(vw))
+    end
 
     @testset "Primitive serialization" begin
         # --- Examples for a struct with only primitive values (+ DateTime)
@@ -238,6 +261,19 @@ end
         end
     end
 
+    @testset "Deserialize VecWrapper" begin
+        vw  = VecWrapper([1,2,"3", AType("Hello")])
+        vvw = VecWrapper(Mongoc.BSON(vw))
+        for i in 1:length(vw.attr)
+            @test vw.attr[i] == vvw.attr[i]
+        end
+
+        vw = VecWrapper([[1,2,"3"],[4,5,6]])
+        vvw = VecWrapper(Mongoc.BSON(vw))
+        for i in 1:length(vw.attr)
+            @test vvw.attr[i] == vw.attr[i]
+        end
+    end
 end
 
 # function profiling()

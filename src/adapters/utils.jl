@@ -1,22 +1,37 @@
 getparamtype(::Type{Array}, obj, f) = eltype(typeof(getfield(obj,f)))
 getparamtype(::Type{Dict},  obj, f) = eltype(fieldtype(typeof(obj), f)).types
-abstract_bson(item) = merge!(Mongoc.BSON("_type" => string(typeof(item))), Mongoc.BSON(item))
+abstract_bson(item)  = merge!(Mongoc.BSON("_type" => string(typeof(item))), Mongoc.BSON(item))
+isgenerictype(ftype) = (isabstracttype(ftype) && ftype != Any) || ftype isa Union
 
 abstract type GenericType end
+
 function bson(::Type{GenericType}, obj, f::Symbol)
     concrete_type = typeof(getfield(obj,f))
     if !isprimitivetype(concrete_type) && !isnothing(getfield(obj,f)) && !(concrete_type <: String)
         return abstract_bson(getfield(obj,f))
     end
-    return nothing
+    return getfield(obj, f)
 end
 
 function bson(::Type{Array}, obj, f::Symbol)
-    parameter_type = getparamtype(Array, obj, f)
-    if isabstracttype(parameter_type) && parameter_type != Any || parameter_type isa Union
-        return [abstract_bson(item) for item in getfield(obj,f)] 
+    paramtype = getparamtype(Array, obj, f)
+    
+    if isgenerictype(paramtype)
+        return [abstract_bson(item) for item in getfield(obj,f)]
+    
+    elseif paramtype == Any
+        arr = []
+        for item in getfield(obj,f)
+            itemtype = typeof(item)
+            if !isprimitivetype(itemtype) && !(itemtype <: String)
+                push!(arr, abstract_bson(item))
+            else
+                push!(arr, item)
+            end
+        end
+        return arr
     end
-    return nothing
+    return getfield(obj, f)
 end
 
 function bson(::Type{Dict}, obj, f::Symbol)
@@ -40,7 +55,7 @@ function bson(::Type{Dict}, obj, f::Symbol)
         end
         return fvalue
     end
-    return nothing
+    return getfield(obj, f)
 end
 
 function gettype(m::Module , strtype::String) ::DataType
@@ -48,16 +63,23 @@ function gettype(m::Module , strtype::String) ::DataType
     return getfield(m, Symbol(evaltype))
 end
 
-isgenerictype(ftype) = isabstracttype(ftype) || ftype isa Union
 
 function toType(::Type{GenericType}, m::Module, ftype::String, obj)
     return convert(gettype(m, ftype), obj)
 end
 
-function toType(::Type{Array}, m::Module, ftype::DataType, obj)
+function toType(::Type{Array}, m::Module, ftype, obj)
     paramtype = eltype(ftype) # --- Gets T of Vector{T}
-    if isgenerictype(paramtype)
-        return map(v -> haskey(v, "_type") ? toType(GenericType, m, v["_type"], v) : v, obj)
+    if isgenerictype(paramtype) || paramtype == Any
+        arr = []
+        for item in obj
+            if typeof(item) <: Dict && haskey(item, "_type")
+                push!(arr, toType(GenericType, m, item["_type"], item))
+            else
+                push!(arr, item)
+            end
+        end
+        return arr
     end
     return obj
 end
@@ -82,18 +104,18 @@ end
 # ---- bson & toType driver functions
 
 function bson(ftype, obj, f)
-    fvalue = nothing
+    
     # ---- Abstract or Union type
     if isgenerictype(ftype)
-        fvalue = bson(GenericType, obj, f)
+        return bson(GenericType, obj, f)
     # ---- Array types
     elseif ftype <: Array
-        fvalue = bson(Array, obj, f)
+        return bson(Array, obj, f)
     # ---- Dict types
     elseif ftype <: Dict
-        fvalue = bson(Dict, obj, f)
+        return bson(Dict, obj, f)
     end
-    return isnothing(fvalue) ? getfield(obj,f) #= default value =# : fvalue #= default value =#
+    return getfield(obj,f) #= default value =#
 end
 
 function toType(m::Module, ftype, data, f)

@@ -65,10 +65,9 @@ struct DictWrapper
     attr::Dict
 end
 
-# TODO: Add support for these structs
-# struct VecWrapper
-#     attr::Array
-# end
+struct VecWrapper
+    attr::Array
+end
 
 # struct All
 #     attr
