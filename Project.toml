@@ -1,7 +1,7 @@
 name = "Serialize"
 uuid = "cff826d6-85b7-4e59-b833-cfb3a9480406"
 authors = ["AndreSobrall <andre.g.sobral@gmail.com>"]
-version = "0.2.1"
+version = "0.2.2"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
