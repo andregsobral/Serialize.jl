@@ -117,7 +117,6 @@ using Serialize
         # --- Vector{Car}: A struct that holds a vector of a concrete type
         for i in 1:length(c.cars)
             @test bson["cars"][i]["brand"] == c.cars[i].brand
-            @test haskey(bson["cars"][i], "_type") == false
         end
 
         # --- Vector{GenericType}: A struct that holds a vector of an abstract type
@@ -262,7 +261,7 @@ end
     end
 
     @testset "Deserialize VecWrapper" begin
-        vw  = VecWrapper([1,2,"3", AType("Hello")])
+        vw  = VecWrapper([1,2,"3", AType("Hello"), [AType("Hello1"), AType("Hello2"), AType("Hell3")]])
         vvw = VecWrapper(Mongoc.BSON(vw))
         for i in 1:length(vw.attr)
             @test vw.attr[i] == vvw.attr[i]

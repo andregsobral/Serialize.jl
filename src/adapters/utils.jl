@@ -15,21 +15,8 @@ end
 
 function bson(::Type{Array}, obj, f::Symbol)
     paramtype = getparamtype(Array, obj, f)
-    
     if isgenerictype(paramtype)
         return [abstract_bson(item) for item in getfield(obj,f)]
-    
-    elseif paramtype == Any
-        arr = []
-        for item in getfield(obj,f)
-            itemtype = typeof(item)
-            if !isprimitivetype(itemtype) && !(itemtype <: String)
-                push!(arr, abstract_bson(item))
-            else
-                push!(arr, item)
-            end
-        end
-        return arr
     end
     return getfield(obj, f)
 end
@@ -75,6 +62,8 @@ function toType(::Type{Array}, m::Module, ftype, obj)
         for item in obj
             if typeof(item) <: Dict && haskey(item, "_type")
                 push!(arr, toType(GenericType, m, item["_type"], item))
+            elseif typeof(item) <: Array
+                push!(arr, toType(Array, m, typeof(item), item))
             else
                 push!(arr, item)
             end

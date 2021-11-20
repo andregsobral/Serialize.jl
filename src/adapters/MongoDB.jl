@@ -21,7 +21,7 @@ macro serialize(type_name)
         # --- Called when setting a bson value of a key and the return type of getfield is not a primitive type
         # --- ex: Base.setindex!(bson::Mongoc.BSON, value::Client, k::AbstractString)
         function Base.setindex!(bson::Mongoc.BSON, value::$(esc(type_name)), k::AbstractString)
-            bson[k] = Mongoc.BSON(value)
+            bson[k] = abstract_bson(value)
         end
 
         # -------------- Deserialize (BSON -> type)
