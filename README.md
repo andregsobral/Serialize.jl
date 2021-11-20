@@ -8,7 +8,7 @@
 I wanted to automatically generate the boilerplate code needed in order to convert between user-defined types and a database storing format.
 
 ## Example
-##### Version 0.2.0
+##### Version 0.2.3
 
 ```julia
 
