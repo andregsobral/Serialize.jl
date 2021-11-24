@@ -37,6 +37,10 @@ struct OtherType <: GenericType
     attr ::Int
 end
 
+struct UnionTest
+    data::Union{Nothing, String, Int, Dict}
+end
+
 struct FourthType
     attr::Union{AType, OtherType}
 end

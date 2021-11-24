@@ -16,6 +16,7 @@ using Serialize
 @serialize DictWrapper
 @serialize HelloGen
 @serialize VecWrapper
+@serialize UnionTest
 # @serialize All
 
 
@@ -98,11 +99,22 @@ using Serialize
         # --- Union{Atype, OtherType}: Union of composite type, should have _type
         fourthtype = FourthType(OtherType(parse(Int, Faker.random_int(min=0, max=9999))))
         fourthtype_bson = Mongoc.BSON(fourthtype)
-        @test haskey(fourthtype_bson, "attr")          == true
-        @test haskey(fourthtype_bson["attr"], "attr")  == true
+        @test haskey(fourthtype_bson, "attr")          
+        @test haskey(fourthtype_bson["attr"], "attr")  
         @test fourthtype_bson["attr"]["attr"]          == fourthtype.attr.attr
-        @test haskey(fourthtype_bson["attr"], "_type") == true
+        @test haskey(fourthtype_bson["attr"], "_type") 
         @test fourthtype_bson["attr"]["_type"]         == "OtherType"
+
+        # ---- Union{Nothing, String, Int, Dict}
+        for d in [nothing, Faker.text(number_chars=10), parse(Int, Faker.random_int(min=0, max=9999)), Dict("hello" => "world")]
+            ut     = UnionTest(d)
+            utbson = Mongoc.BSON(ut)
+            @test haskey(utbson, "data")
+            @test utbson["data"] == ut.data
+            if typeof(utbson["data"]) <: Dict
+                @test !haskey(utbson["data"], "_type")
+            end
+        end
     end
 
 
@@ -188,6 +200,13 @@ end
         car_bson = Mongoc.BSON("brand" => 10000)
         car = Car(car_bson)
         @test car_bson["brand"] == car.brand
+
+        # ---- Union{Nothing, String, Int, Dict}
+        for d in [nothing, Faker.text(number_chars=10), parse(Int, Faker.random_int(min=0, max=9999)), Dict("hello" => "world")]
+            ut     = UnionTest(d)
+            newut  = UnionTest(Mongoc.BSON(ut))
+            @test newut.data == ut.data
+        end
     end
 
     @testset "Composite deserialization" begin

@@ -3,6 +3,13 @@ getparamtype(::Type{Dict},  obj, f) = eltype(fieldtype(typeof(obj), f)).types
 abstract_bson(item)  = merge!(Mongoc.BSON("_type" => string(typeof(item))), Mongoc.BSON(item))
 isgenerictype(ftype) = (isabstracttype(ftype) && ftype != Any) || ftype isa Union
 
+isgeneric(data) = false
+function isgeneric(data::Dict)
+    valparamtype = eltype(typeof(data)).types[2]
+    return !isprimitivetype(valparamtype) && !(valparamtype <: String)
+end
+
+
 abstract type GenericType end
 
 function bson(::Type{GenericType}, obj, f::Symbol)
@@ -95,7 +102,7 @@ end
 function bson(ftype, obj, f)
     
     # ---- Abstract or Union type
-    if isgenerictype(ftype)
+    if isgenerictype(ftype) && isgeneric(getfield(obj,f))
         return bson(GenericType, obj, f)
     # ---- Array types
     elseif ftype <: Array
@@ -110,7 +117,7 @@ end
 function toType(m::Module, ftype, data, f)
     fvalue = data[string(f)] # default value
     # ---- Abstract or Union type
-    if isgenerictype(ftype) && typeof(fvalue) <: Dict # -- filters out cases of Union{String, SomeType}
+    if isgenerictype(ftype) && typeof(fvalue) <: Dict && haskey(fvalue, "_type") # -- filters out cases of Union{String, Int, Dict}
         return toType(GenericType, m, fvalue["_type"], fvalue)
     # ---- Array types
     elseif ftype <: Array
